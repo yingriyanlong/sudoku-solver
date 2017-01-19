@@ -9,6 +9,7 @@
 # import string
 import copy
 
+
 # 解数独函数
 def solver(sdin):
     # 将输入的数独题目存入sdtemp用于解题目
@@ -37,8 +38,10 @@ def solver(sdin):
                 same_col = range(col, 81, 9)  # 同列元素位置
                 # 同方块元素位置
                 same_block = (list(range(block_row * 27 + block_col * 3, block_row * 27 + (block_col + 1) * 3)) +
-                              list(range(block_row * 27 + 9 + block_col * 3, block_row * 27 + 9 + (block_col + 1) * 3)) +
-                              list(range(block_row * 27 + 18 + block_col * 3, block_row * 27 + 18 + (block_col + 1) * 3)))
+                              list(
+                                  range(block_row * 27 + 9 + block_col * 3, block_row * 27 + 9 + (block_col + 1) * 3)) +
+                              list(range(block_row * 27 + 18 + block_col * 3,
+                                         block_row * 27 + 18 + (block_col + 1) * 3)))
                 # 题目没有被解决，标志位置否
                 is_solved = False
                 # 当前位置可供选择的数字
@@ -55,18 +58,19 @@ def solver(sdin):
                 for i in same_block:
                     if sd_current_available_number.__contains__(sd_current_solution[i]):
                         sd_current_available_number.remove(sd_current_solution[i])
+                # 若最小位置的可供选择数字数目为0，退出循环
+                if sd_min_available_number.__len__() == 0:
+                    break
                 # 若当前位置可选数字为最小 ，替换坐标和选择数字
                 if sd_current_available_number.__len__() < sd_min_available_number.__len__():
                     sd_min_available_number_x = X
                     sd_min_available_number = copy.deepcopy(sd_current_available_number)
-                # 若最小位置的可供选择数字数目为0，退出循环
-                if sd_min_available_number.__len__() == 0:
-                    break
 
-        for number in sd_min_available_number:
-            sd_new_solution = copy.deepcopy(sd_current_solution)
-            sd_new_solution[sd_min_available_number_x] = number
-            sdtemp.append(sd_new_solution)
+        if (sd_min_available_number.__len__() > 0) & (not is_solved):
+            for number in sd_min_available_number:
+                sd_new_solution = copy.deepcopy(sd_current_solution)
+                sd_new_solution[sd_min_available_number_x] = number
+                sdtemp.append(sd_new_solution)
 
     if is_solved:
         return sd_current_solution
@@ -89,7 +93,7 @@ if __name__ == "__main__":
     if answer:
         for i in range(9):
             for j in range(9):
-                print(answer[1], end=' ')
+                print(answer[i*9+j], end=' ')
             print('\n', end='')
     else:
         print('no solution!')
