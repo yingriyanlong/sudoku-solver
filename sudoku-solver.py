@@ -60,26 +60,26 @@ def solver(sdin):
 
         if (sd_min_available_number.__len__() > 0) & (not is_solved):
             for number in sd_min_available_number:
-                sd_current_solution[sd_min_available_number_x] = number
-                sdtemp.append(sd_current_solution)
+                sd_new_solution = copy.deepcopy(sd_current_solution)
+                sd_new_solution[sd_min_available_number_x] = number
+                sdtemp.append(sd_new_solution)
+        elif is_solved:
+            return sd_current_solution, iterations
 
-    if is_solved:
-        return sd_current_solution, iterations
-    else:
-        return [], iterations
+    return [], iterations
 
 
 # main函数
 if __name__ == "__main__":
-    sudoku = [6, 0, 5, 3, 0, 4, 0, 0, 8,
-              0, 0, 0, 7, 0, 6, 9, 0, 4,
-              0, 4, 7, 5, 0, 0, 0, 3, 1,
-              0, 0, 6, 8, 0, 9, 4, 1, 0,
-              0, 8, 4, 0, 0, 0, 0, 0, 0,
-              5, 0, 3, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 3, 1, 0, 0,
-              4, 0, 1, 0, 0, 0, 0, 0, 2,
-              0, 0, 9, 2, 0, 0, 8, 7, 5]
+    sudoku = [7, 9, 0, 1, 8, 0, 0, 0, 0,
+              1, 0, 0, 3, 0, 0, 0, 0, 6,
+              0, 0, 2, 0, 0, 0, 0, 0, 0,
+              0, 0, 0, 0, 0, 9, 0, 5, 0,
+              9, 5, 1, 8, 0, 0, 0, 0, 0,
+              8, 0, 3, 0, 7, 4, 6, 0, 9,
+              0, 6, 9, 0, 0, 0, 7, 0, 5,
+              5, 0, 0, 0, 0, 7, 0, 9, 0,
+              2, 0, 0, 0, 5, 0, 0, 6, 3]
     start = time.clock()
     answer, iteration = solver(sudoku)
     stop = time.clock()
