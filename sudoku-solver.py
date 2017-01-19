@@ -6,11 +6,8 @@
 
 # import python libs
 # import time
-import copy
-
-
 # import string
-
+import copy
 
 # 解数独函数
 def solver(sdin):
