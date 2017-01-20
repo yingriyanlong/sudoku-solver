@@ -10,6 +10,7 @@ import time
 import copy
 from timeit import Timer
 
+
 # 解数独函数
 def solver(sdin):
     # 将输入的数独题目存入sdtemp用于解题目
@@ -39,7 +40,8 @@ def solver(sdin):
                 # 同方块元素位置
                 same_block = (set(range(block_row * 27 + block_col * 3, block_row * 27 + (block_col + 1) * 3)) |
                               set(range(block_row * 27 + 9 + block_col * 3, block_row * 27 + 9 + (block_col + 1) * 3)) |
-                              set(range(block_row * 27 + 18 + block_col * 3, block_row * 27 + 18 + (block_col + 1) * 3)))
+                              set(range(block_row * 27 + 18 + block_col * 3,
+                                        block_row * 27 + 18 + (block_col + 1) * 3)))
                 same = same_row | same_col | same_block
                 same.remove(X)
                 # 题目没有被解决，标志位置否
@@ -88,12 +90,12 @@ if __name__ == "__main__":
     if answer:
         for i in range(9):
             for j in range(9):
-                print(answer[i*9+j], end=' ')
+                print(answer[i * 9 + j], end=' ')
             print('\n', end='')
     else:
         print('no solution!')
     print("循环次数:", iteration)
     # 使用timeit模块测试时间
-    t = Timer("solver","from __main__ import solver")
-    print("Timeit时间：",t.timeit(iteration))
-    print("TimeClock时间：",stop - start)
+    t = Timer("solver", "from __main__ import solver")
+    print("Timeit时间：", t.timeit(iteration))
+    print("TimeClock时间：", stop - start)
