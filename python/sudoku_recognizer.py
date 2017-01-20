@@ -8,7 +8,28 @@
 # 导入python数据库/import python libs
 # from matplotlib import pylab as lb
 import cv2
+import math
 import numpy
+
+IMAGE_WIDTH = 64
+IMAGE_HEIGHT = 64
+SUDOKU_SIZE = 9
+N_MIN_ACTIVE_PIXELS = 50
+
+
+# 排序角坐标
+def get_sort_rectangle_max(corners):
+    ar = [corners[0, 0, :], corners[1, 0, :], corners[2, 0, :], corners[3, 0, :]]
+
+    x_ave = sum(corners[x, 0, 0] for x in range(corners.__len__())) / corners.__len__()
+    y_ave = sum(corners[x, 0, 1] for x in range(corners.__len__())) / corners.__len__()
+
+    def algo(v):  # atan((x-avx)/(y-avy))
+        return math.atan2(v[0] - x_ave, v[1] - y_ave)
+
+    ar.sort(key=algo)
+
+    return ar[3], ar[0], ar[1], ar[2]
 
 
 def image_reader(direction):
@@ -58,13 +79,38 @@ def sudoku_segment(image_sudoku_origin):
             rectangle_max = approximation
     # 在原图中画出数独题目区域
     # for i, c in enumerate(rectangle_max):
-    #     cv2.line(image_sudoku_origin, (rectangle_max[i % 4][0][0], rectangle_max[i % 4][0][1]),
-    #              (rectangle_max[(i + 1) % 4][0][0], rectangle_max[(i + 1) % 4][0][1]), (0, 0, 255), 2)
-    # cv2.imshow('1', image_sudoku_origin)
+    #     cv2.line(image_sudoku_origin, (rectangle_max[i][0][0], rectangle_max[i][0][1]),
+    #              (rectangle_max[(i + 1)%4][0][0], rectangle_max[(i + 1)%4][0][1]), (0, 0, 255), 2)
+    #     cv2.line(image_sudoku_origin,(0,0),(0,500),(255,0,0),thickness=5)
+    # cv2.imshow('3', image_sudoku_origin)
     # cv2.waitKey(0)
+
+    # 框起来的图片变为576*576的map，每个格子为64*64
+    aim_points = numpy.array([numpy.array([0.0, 0.0], numpy.float32) +
+                              numpy.array([SUDOKU_SIZE * IMAGE_HEIGHT, 0.0], numpy.float32),
+                              numpy.array([0.0, 0.0], numpy.float32),
+                              numpy.array([0.0, 0.0], numpy.float32) +
+                              numpy.array([0.0, SUDOKU_SIZE * IMAGE_HEIGHT], numpy.float32),
+                              numpy.array([0.0, 0.0], numpy.float32) +
+                              numpy.array([SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_HEIGHT], numpy.float32),
+                              ], numpy.float32)
+    sort_rectangle_max = get_sort_rectangle_max(rectangle_max)
+    need_to_correct_points = numpy.array(sort_rectangle_max, numpy.float32)
+    # 生成转换坐标需要的3*3参数
+    pers = cv2.getPerspectiveTransform(need_to_correct_points, aim_points)
+    # 重新生成只有数独题目的图片
+    warp = cv2.warpPerspective(image_sudoku_origin, pers, (SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_WIDTH))
+    warp_gray = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
+    # cv2.imshow('1', warp_gray)
+    # cv2.waitKey(0)
+    return warp_gray
+
+
+def numbers_segment(sudoku_segment_gray):
+    pass
 
 
 # main函数
 if __name__ == "__main__":
-    origin = image_reader(r'C:\1.jpg')
-    sudoku_segment(origin)
+    image_origin = image_reader(r'C:\1.jpg')
+    segment_gray = sudoku_segment(image_origin)
