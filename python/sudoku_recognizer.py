@@ -1,7 +1,7 @@
 # !/usr/bin/python
 # coding:utf8
 # author:ykf
-# latest date:2017/1/20
+# latest date:2017/1/25
 # environment:python3.6
 # opencv 3.2 with contributes
 
@@ -14,7 +14,9 @@ import numpy
 IMAGE_WIDTH = 64
 IMAGE_HEIGHT = 64
 SUDOKU_SIZE = 9
-N_MIN_ACTIVE_PIXELS = 50
+N_MIN_ACTIVE_PIXELS = 100
+# 初始化数独数字分格存放数组
+sudoku_numbers = numpy.zeros(shape=(SUDOKU_SIZE * SUDOKU_SIZE, IMAGE_WIDTH * IMAGE_HEIGHT))
 
 
 # 排序角坐标
@@ -28,7 +30,6 @@ def get_sort_rectangle_max(corners):
         return math.atan2(v[0] - x_ave, v[1] - y_ave)
 
     ar.sort(key=algo)
-
     return ar[3], ar[0], ar[1], ar[2]
 
 
@@ -59,7 +60,7 @@ def sudoku_segment(image_sudoku_origin):
     # 找到图形的轮廓
     _, contours, _ = cv2.findContours(image_sudoku_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     # 获取图像的尺寸（高height，宽width）
-    image_sudoku_height, image_sudoku_width = image_sudoku_origin.shape[:2]
+    # image_sudoku_height, image_sudoku_width = image_sudoku_origin.shape[:2]
     # 寻找最大的长方形
     size_rectangle_max = 0
     rectangle_max = []
@@ -92,25 +93,46 @@ def sudoku_segment(image_sudoku_origin):
                               numpy.array([0.0, 0.0], numpy.float32) +
                               numpy.array([0.0, SUDOKU_SIZE * IMAGE_HEIGHT], numpy.float32),
                               numpy.array([0.0, 0.0], numpy.float32) +
-                              numpy.array([SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_HEIGHT], numpy.float32),
+                              numpy.array([SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_WIDTH], numpy.float32),
                               ], numpy.float32)
     sort_rectangle_max = get_sort_rectangle_max(rectangle_max)
     need_to_correct_points = numpy.array(sort_rectangle_max, numpy.float32)
     # 生成转换坐标需要的3*3参数
     pers = cv2.getPerspectiveTransform(need_to_correct_points, aim_points)
     # 重新生成只有数独题目的图片
-    warp = cv2.warpPerspective(image_sudoku_origin, pers, (SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_WIDTH))
-    warp_gray = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
-    # cv2.imshow('1', warp_gray)
+    warp = cv2.warpPerspective(image_sudoku_binary, pers, (SUDOKU_SIZE * IMAGE_HEIGHT, SUDOKU_SIZE * IMAGE_WIDTH))
+    # warp_gray = cv2.cvtColor(warp, cv2.COLOR_BGR2GRAY)
+    # cv2.imshow('1', warp)
     # cv2.waitKey(0)
-    return warp_gray
+    return warp
 
 
-def numbers_segment(sudoku_segment_gray):
-    pass
+# TODO a subprogram to segment numbers into arrays
+def numbers_segment(image_sudoku_segment):
+    for row in range(SUDOKU_SIZE):
+        for col in range(SUDOKU_SIZE):
+            # 将第row行第col列的数字的灰度(二进制）图像存入image_number,row<=9,col<=9
+            image_number = image_sudoku_segment[row * IMAGE_HEIGHT:(row + 1) * IMAGE_HEIGHT][
+                           :, col * IMAGE_WIDTH:(col + 1) * IMAGE_WIDTH]
+            # 使用不同的自适阀值参数将灰度转为二进制
+            # image_number_threshold = cv2.adaptiveThreshold(image_number, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            #                                                cv2.THRESH_BINARY_INV, 15, 10)
+            # 为了减少对数字识别的影响，将距离中心的一定范围内外的白色像素点变为黑色
+            image_number_zero = numpy.zeros(shape=(IMAGE_HEIGHT, IMAGE_WIDTH))
+            image_number_zero[IMAGE_HEIGHT // 5:IMAGE_HEIGHT - IMAGE_HEIGHT // 5]\
+            [:, IMAGE_WIDTH // 5:IMAGE_WIDTH - IMAGE_WIDTH // 5] = image_number\
+            [IMAGE_HEIGHT // 5:IMAGE_HEIGHT - IMAGE_HEIGHT // 5][:, IMAGE_WIDTH // 5:IMAGE_WIDTH - IMAGE_WIDTH // 5]
+            # 计算白色像素个数
+            image_number_white_number = cv2.countNonZero(image_number_zero)
+            if image_number_white_number >= N_MIN_ACTIVE_PIXELS:
+                pass
+            #     cv2.imshow('1', image_number_zero)
+            #     cv2.waitKey(0)
+            # TODO add next program段: 每个数字的最小框
 
 
 # main函数
 if __name__ == "__main__":
     image_origin = image_reader(r'C:\1.jpg')
-    segment_gray = sudoku_segment(image_origin)
+    image_segment = sudoku_segment(image_origin)
+    numbers_segment(image_segment)
