@@ -1,9 +1,8 @@
 # !/usr/bin/python
 # coding:utf8
 # author:ykf
-# latest date:2017/1/25
-# environment:python3.6
-# opencv 3.2 with contributes
+# latest date:2017/1/26
+# environment:python3.6.0 + opencv 3.2 with contributes
 
 # 导入python数据库/import python libs
 # from matplotlib import pylab as lb
@@ -14,9 +13,9 @@ import numpy
 IMAGE_WIDTH = 64
 IMAGE_HEIGHT = 64
 SUDOKU_SIZE = 9
-N_MIN_ACTIVE_PIXELS = 100
+N_MIN_ACTIVE_PIXELS = 50
 # 初始化数独数字分格存放数组
-sudoku_numbers = numpy.zeros(shape=(SUDOKU_SIZE * SUDOKU_SIZE, IMAGE_WIDTH * IMAGE_HEIGHT))
+# sudoku_numbers = numpy.zeros(shape=(SUDOKU_SIZE * SUDOKU_SIZE, 1))
 
 
 # 排序角坐标
@@ -55,7 +54,7 @@ def sudoku_segment(image_sudoku_origin):
     # image_sudoku_gray = image_sudoku_origin
     # 自适应阀值化，将灰度图片转换为黑白图片
     image_sudoku_binary = cv2.adaptiveThreshold(image_sudoku_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                cv2.THRESH_BINARY_INV, 15, 10)
+                                                cv2.THRESH_BINARY_INV, 21, 8)
     # cv2.imshow('2', image_sudoku_binary)
     # 找到图形的轮廓
     _, contours, _ = cv2.findContours(image_sudoku_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -64,7 +63,7 @@ def sudoku_segment(image_sudoku_origin):
     # 寻找最大的长方形
     size_rectangle_max = 0
     rectangle_max = []
-    for i, c in enumerate(contours):
+    for _, c in enumerate(contours):
         # 找近似的多边形
         approximation = cv2.approxPolyDP(c, 8, True)
         # 近似多边形是不是四边形？
@@ -107,8 +106,10 @@ def sudoku_segment(image_sudoku_origin):
     return warp
 
 
-# TODO a subprogram to segment numbers into arrays
+# 将黑白的数独游戏盘格分为小格并对每个小格子进行机器学习的数字识别
 def numbers_segment(image_sudoku_segment):
+    sudoku_numbers = [0] * (SUDOKU_SIZE ** 2)
+    knn = knn_init()
     for row in range(SUDOKU_SIZE):
         for col in range(SUDOKU_SIZE):
             # 将第row行第col列的数字的灰度(二进制）图像存入image_number,row<=9,col<=9
@@ -118,21 +119,67 @@ def numbers_segment(image_sudoku_segment):
             # image_number_threshold = cv2.adaptiveThreshold(image_number, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
             #                                                cv2.THRESH_BINARY_INV, 15, 10)
             # 为了减少对数字识别的影响，将距离中心的一定范围内外的白色像素点变为黑色
-            image_number_zero = numpy.zeros(shape=(IMAGE_HEIGHT, IMAGE_WIDTH))
-            image_number_zero[IMAGE_HEIGHT // 5:IMAGE_HEIGHT - IMAGE_HEIGHT // 5]\
-            [:, IMAGE_WIDTH // 5:IMAGE_WIDTH - IMAGE_WIDTH // 5] = image_number\
-            [IMAGE_HEIGHT // 5:IMAGE_HEIGHT - IMAGE_HEIGHT // 5][:, IMAGE_WIDTH // 5:IMAGE_WIDTH - IMAGE_WIDTH // 5]
+            image_number_zero = numpy.zeros(shape=(IMAGE_HEIGHT, IMAGE_WIDTH), dtype=numpy.uint8)
+            image_number_zero[IMAGE_HEIGHT // 4:IMAGE_HEIGHT - IMAGE_HEIGHT // 4]\
+            [:, IMAGE_WIDTH // 4:IMAGE_WIDTH - IMAGE_WIDTH // 4] = image_number\
+            [IMAGE_HEIGHT // 4:IMAGE_HEIGHT - IMAGE_HEIGHT // 4][:, IMAGE_WIDTH // 4:IMAGE_WIDTH - IMAGE_WIDTH // 4]
             # 计算白色像素个数
             image_number_white_number = cv2.countNonZero(image_number_zero)
+            # 如果白色数目多于某个值，说明这个小格子中有数字
             if image_number_white_number >= N_MIN_ACTIVE_PIXELS:
-                pass
-            #     cv2.imshow('1', image_number_zero)
-            #     cv2.waitKey(0)
-            # TODO add next program段: 每个数字的最小框
+                # 找到包围数字的最小格子范围
+                _, contours, _ = cv2.findContours(image_number_zero.copy(), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+                numbers_bounding_max = []
+                numbers_bounding_size_max = 0
+                for _, c in enumerate(contours):
+                    numbers_bounding = cv2.boundingRect(c)
+                    numbers_bounding_size = numbers_bounding[2] * numbers_bounding[3]
+                    if numbers_bounding_size > numbers_bounding_size_max:
+                        numbers_bounding_size_max = numbers_bounding_size
+                        numbers_bounding_max = numbers_bounding
+                x, y, w, h = numbers_bounding_max
+                # 如果找到的最小格子范围不为0，则说明确实有数字存在
+                if w*h > 0:
+                    x -= 1
+                    y -= 1
+                    w += 2
+                    h += 2
+                    image_number_zero = image_number_zero[y:y + h, x:x + w]
+                    image_number_zero = cv2.resize(image_number_zero, (IMAGE_WIDTH, IMAGE_HEIGHT))
+                    image_number_reg = image_number_zero.reshape(-1, IMAGE_WIDTH*IMAGE_HEIGHT).astype(numpy.float32)
+                    ret, result, _, _ = knn.findNearest(image_number_reg, k=5)
+                    if ret:
+                        sudoku_numbers[row*9+col] = int(result[0][0])
+                    cv2.imshow('1', image_number_zero)
+                    cv2.waitKey(0)
+
+    return sudoku_numbers
+
+
+# 使用机器学习的knn方法识别数字
+def knn_init():
+    knn = cv2.ml.KNearest_create()
+    # 使用cv2自带的knn手写数字训练图片
+    init_image = cv2.imread(r'digits.png')
+    init_image_gray = cv2.cvtColor(init_image, cv2.COLOR_BGR2GRAY)
+    # 将原来的20*20的手写字体调整到所需要的IMAGE_WIDTH*IMAGE_HEIGHT大小
+    init_image_gray = cv2.resize(init_image_gray, (IMAGE_WIDTH*100, IMAGE_HEIGHT*50))
+    # 将每一个数字分开
+    cells = [numpy.hsplit(row, 100) for row in numpy.vsplit(init_image_gray, 50)]
+    train = numpy.array(cells).reshape(-1, IMAGE_WIDTH*IMAGE_HEIGHT).astype(numpy.float32)
+    # 训练标签与字符一一对应
+    train_label = numpy.repeat(numpy.arange(10), 500)
+    # 开始训练
+    knn.train(train, cv2.ml.ROW_SAMPLE, train_label)
+    return knn
 
 
 # main函数
 if __name__ == "__main__":
-    image_origin = image_reader(r'C:\1.jpg')
+    image_origin = image_reader(r'2.jpg')
     image_segment = sudoku_segment(image_origin)
-    numbers_segment(image_segment)
+    numbers = numbers_segment(image_segment)
+    for i in range(9):
+        for j in range(9):
+            print(numbers[i * 9 + j], end=' ')
+        print('\n', end='')
