@@ -1,14 +1,18 @@
 # !/usr/bin/python
 # coding:utf8
 # author:ykf
-# latest date:2017/1/26
+# latest date:2017/1/27
 # environment:python3.6.0 + opencv 3.2 with contributes
 
 # 导入python数据库/import python libs
 # from matplotlib import pylab as lb
+import os
 import cv2
 import math
 import numpy
+from PIL import Image
+import pytesseract
+import sudoku_solver
 
 IMAGE_WIDTH = 64
 IMAGE_HEIGHT = 64
@@ -54,7 +58,7 @@ def sudoku_segment(image_sudoku_origin):
     # image_sudoku_gray = image_sudoku_origin
     # 自适应阀值化，将灰度图片转换为黑白图片
     image_sudoku_binary = cv2.adaptiveThreshold(image_sudoku_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                cv2.THRESH_BINARY_INV, 21, 8)
+                                                cv2.THRESH_BINARY_INV, 25, 8)
     # cv2.imshow('2', image_sudoku_binary)
     # 找到图形的轮廓
     _, contours, _ = cv2.findContours(image_sudoku_binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -141,18 +145,22 @@ def numbers_segment(image_sudoku_segment):
                 # 如果找到的最小格子范围不为0，则说明确实有数字存在
                 if w*h > 0:
                     x -= 1
-                    y -= 1
+                    y -= 3
                     w += 2
-                    h += 2
+                    h += 6
                     image_number_zero = image_number_zero[y:y + h, x:x + w]
-                    image_number_zero = cv2.resize(image_number_zero, (IMAGE_WIDTH, IMAGE_HEIGHT))
-                    image_number_reg = image_number_zero.reshape(-1, IMAGE_WIDTH*IMAGE_HEIGHT).astype(numpy.float32)
-                    ret, result, _, _ = knn.findNearest(image_number_reg, k=5)
-                    if ret:
-                        sudoku_numbers[row*9+col] = int(result[0][0])
-                    cv2.imshow('1', image_number_zero)
-                    cv2.waitKey(0)
-
+                    cv2.imwrite('temp.jpg', image_number_zero)
+                    im = Image.open('temp.jpg')
+                    # im.show(title='1')
+                    try:
+                        sudoku_numbers[row * 9 + col] = int(pytesseract.image_to_string(im, config='-psm 10'))
+                    except ValueError:
+                        image_number_zero = cv2.resize(image_number_zero, (IMAGE_WIDTH, IMAGE_HEIGHT))
+                        image_number_reg = image_number_zero.reshape(-1, IMAGE_WIDTH*IMAGE_HEIGHT).astype(numpy.float32)
+                        ret, result, _, _ = knn.findNearest(image_number_reg, k=5)
+                        if ret:
+                            sudoku_numbers[row*9+col] = int(result[0][0])
+    os.remove('temp.jpg')
     return sudoku_numbers
 
 
@@ -176,10 +184,20 @@ def knn_init():
 
 # main函数
 if __name__ == "__main__":
-    image_origin = image_reader(r'2.jpg')
+    image_origin = image_reader(r'1.jpg')
     image_segment = sudoku_segment(image_origin)
     numbers = numbers_segment(image_segment)
     for i in range(9):
         for j in range(9):
             print(numbers[i * 9 + j], end=' ')
         print('\n', end='')
+    print('-----------------\n', end='')
+    answer, iteration = sudoku_solver.solver(numbers)
+    if answer:
+        for i in range(9):
+            for j in range(9):
+                print(answer[i * 9 + j], end=' ')
+            print('\n', end='')
+    else:
+        print('recognizer error')
+    print(iteration)
