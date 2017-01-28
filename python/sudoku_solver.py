@@ -72,30 +72,30 @@ def solver(sdin):
 
 
 # main函数
-if __name__ == "__main__":
-    sudoku = [7, 9, 0, 1, 8, 0, 0, 0, 0,
-              1, 0, 0, 3, 0, 0, 0, 0, 6,
-              0, 0, 2, 0, 0, 0, 0, 0, 0,
-              0, 0, 0, 0, 0, 9, 0, 5, 0,
-              9, 5, 1, 8, 0, 0, 0, 0, 0,
-              8, 0, 3, 0, 7, 4, 6, 0, 9,
-              0, 6, 9, 0, 0, 0, 7, 0, 5,
-              5, 0, 0, 0, 0, 7, 0, 9, 0,
-              2, 0, 0, 0, 5, 0, 0, 6, 3]
-    start = time.clock()
-    answer, iteration = solver(sudoku)
-    stop = time.clock()
-
-    # 输出结果
-    if answer:
-        for i in range(9):
-            for j in range(9):
-                print(answer[i * 9 + j], end=' ')
-            print('\n', end='')
-    else:
-        print('no solution!')
-    print("循环次数:", iteration)
-    # 使用timeit模块测试时间
-    t = Timer("solver", "from __main__ import solver")
-    print("Timeit时间：", t.timeit(iteration))
-    print("TimeClock时间：", stop - start)
+# if __name__ == "__main__":
+#     sudoku = [7, 9, 0, 1, 8, 0, 0, 0, 0,
+#               1, 0, 0, 3, 0, 0, 0, 0, 6,
+#               0, 0, 2, 0, 0, 0, 0, 0, 0,
+#               0, 0, 0, 0, 0, 9, 0, 5, 0,
+#               9, 5, 1, 8, 0, 0, 0, 0, 0,
+#               8, 0, 3, 0, 7, 4, 6, 0, 9,
+#               0, 6, 9, 0, 0, 0, 7, 0, 5,
+#               5, 0, 0, 0, 0, 7, 0, 9, 0,
+#               2, 0, 0, 0, 5, 0, 0, 6, 3]
+#     start = time.clock()
+#     answer, iteration = solver(sudoku)
+#     stop = time.clock()
+#
+#     # 输出结果
+#     if answer:
+#         for i in range(9):
+#             for j in range(9):
+#                 print(answer[i * 9 + j], end=' ')
+#             print('\n', end='')
+#     else:
+#         print('no solution!')
+#     print("循环次数:", iteration)
+#     # 使用timeit模块测试时间
+#     t = Timer("solver", "from __main__ import solver")
+#     print("Timeit时间：", t.timeit(iteration))
+#     print("TimeClock时间：", stop - start)
