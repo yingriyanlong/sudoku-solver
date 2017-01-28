@@ -23,4 +23,4 @@ A sudoku crosswords solver using python.
 
 2.pytesseract
 1）pip3 install pytesseract
-2）安装tesseract-ocr软件，下载地址：http：//digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-setup-3.05.00dev.exe
+2）安装tesseract-ocr软件，下载地址：http://digi.bib.uni-mannheim.de/tesseract/tesseract-ocr-setup-3.05.00dev.exe
