@@ -12,7 +12,7 @@ import math
 import numpy
 from PIL import Image
 import pytesseract
-import sudoku_solver
+# import sudoku_solver
 
 IMAGE_WIDTH = 64
 IMAGE_HEIGHT = 64
