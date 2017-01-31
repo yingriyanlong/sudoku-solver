@@ -19,7 +19,8 @@ A sudoku crosswords solver using python.
 1.opencv 3.2：
 1）下载地址：http://www.lfd.uci.edu/~gohlke/pythonlibs/#opencv
 2）建议使用含有contrib的版本
-3）使用wheel工具安装
+3）pip3 install wheel
+3）使用wheel工具安装,wheel install *.whl
 
 2.pytesseract
 1）pip3 install pytesseract
